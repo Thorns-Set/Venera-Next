@@ -153,7 +153,7 @@ class MyLogInterceptor extends Interceptor {
 }
 
 class AppDio with DioMixin {
-  AppDio([BaseOptions? options]) : this._(options, false);
+  AppDio([BaseOptions? options]) : this._(options, true);
 
   AppDio.forImages([BaseOptions? options]) : this._(options, true);
 
