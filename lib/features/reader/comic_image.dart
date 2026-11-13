@@ -1,5 +1,7 @@
 import 'dart:ui' as ui;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
@@ -162,6 +164,7 @@ class ComicImageState extends State<ComicImage> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _stallTimer?.cancel();
     assert(_imageStream != null);
     WidgetsBinding.instance.removeObserver(this);
     _stopListeningToStream();
@@ -264,6 +267,21 @@ class ComicImageState extends State<ComicImage> with WidgetsBindingObserver {
     _resolveImage();
   }
 
+  Timer? _stallTimer;
+
+  /// 图片长时间没有结果（源在反复换节点）时，兜底显示错误与重试，
+  /// 避免用户翻过去只看到一片空白。
+  void _startStallTimer() {
+    _stallTimer?.cancel();
+    _stallTimer = Timer(const Duration(seconds: 25), () {
+      if (!mounted || _lastException != null) return;
+      setState(() {
+        _lastException = 'Image loading timed out';
+        _loadingProgress = null;
+      });
+    });
+  }
+
   void _resolveImage() {
     final ScrollAwareImageProvider provider = ScrollAwareImageProvider<Object>(
       context: _scrollAwareContext,
@@ -278,6 +296,7 @@ class ComicImageState extends State<ComicImage> with WidgetsBindingObserver {
       ),
     );
     _updateSourceStream(newStream);
+    _startStallTimer();
   }
 
   ImageStreamListener? _imageStreamListener;
