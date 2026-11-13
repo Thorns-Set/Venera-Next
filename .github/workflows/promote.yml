@@ -29,7 +29,7 @@ jobs:
           set -euo pipefail
           f=$(ls dl/*arm64*.apk | head -1)
           echo "上传 $f"
-          url=$(curl -sS --max-time 1200 -F "reqtype=fileupload" -F "time=72h" -F "fileToUpload=@$f" https://litterbox.catbox.moe/resources/internals/api.php)
+          url=$(curl -sS -A "Mozilla/5.0 (X11; Linux x86_64)" --max-time 1200 -F "reqtype=fileupload" -F "fileToUpload=@$f" https://catbox.moe/user/api.php)
           echo "URL: $url"
           echo "$url" > apk_url.txt
       - name: 记录链接
