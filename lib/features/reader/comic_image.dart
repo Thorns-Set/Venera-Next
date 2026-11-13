@@ -227,8 +227,18 @@ class ComicImageState extends State<ComicImage> with WidgetsBindingObserver {
 
   /// 单张图片失败后自动重试一次：网络抖动或 QUIC 握手失败时，
   /// 往往立刻再试就能成功，省得用户手动点。
+  bool _isTimeoutError(Object error) {
+    final text = error.toString().toLowerCase();
+    return text.contains('timedout') ||
+        text.contains('timed out') ||
+        text.contains('timeout');
+  }
+
   void _scheduleAutoRetry() {
     if (_autoRetries >= 1) return;
+    // 超时通常意味着节点不可达，重试只会让用户多等一个超时周期，
+    // 直接把重试按钮交给用户（或交给源换节点）。
+    if (_isTimeoutError(_lastException ?? '')) return;
     _autoRetries++;
     Future.delayed(const Duration(milliseconds: 1500), () async {
       if (!mounted || _lastException == null) return;

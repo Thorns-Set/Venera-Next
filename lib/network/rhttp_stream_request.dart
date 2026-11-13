@@ -556,8 +556,8 @@ rhttp.ClientSettings _withNoSniForEhentai(
     final t = settings.timeoutSettings ?? const rhttp.TimeoutSettings();
     settings = settings.copyWith(
       timeoutSettings: rhttp.TimeoutSettings(
-        timeout: const Duration(seconds: 12),
-        connectTimeout: const Duration(seconds: 6),
+        timeout: const Duration(seconds: 8),
+        connectTimeout: const Duration(seconds: 4),
         keepAliveTimeout: t.keepAliveTimeout,
         keepAlivePing: t.keepAlivePing,
       ),
