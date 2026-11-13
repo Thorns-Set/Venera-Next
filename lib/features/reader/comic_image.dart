@@ -276,7 +276,7 @@ class ComicImageState extends State<ComicImage> with WidgetsBindingObserver {
     _stallTimer = Timer(const Duration(seconds: 25), () {
       if (!mounted || _lastException != null) return;
       setState(() {
-        _lastException = 'Image loading timed out';
+        _lastException = '图片加载超时'.tl;
         _loadingProgress = null;
       });
     });
@@ -308,6 +308,7 @@ class ComicImageState extends State<ComicImage> with WidgetsBindingObserver {
         _handleImageFrame,
         onChunk: _handleImageChunk,
         onError: (Object error, StackTrace? stackTrace) {
+          _stallTimer?.cancel();
           setState(() {
             _lastException = error;
           });
@@ -319,6 +320,7 @@ class ComicImageState extends State<ComicImage> with WidgetsBindingObserver {
   }
 
   void _handleImageFrame(ImageInfo imageInfo, bool synchronousCall) {
+    _stallTimer?.cancel();
     setState(() {
       _replaceImage(info: imageInfo);
       _loadingProgress = null;
