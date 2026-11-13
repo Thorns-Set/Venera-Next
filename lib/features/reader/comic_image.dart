@@ -223,6 +223,37 @@ class ComicImageState extends State<ComicImage> with WidgetsBindingObserver {
         SemanticsBinding.instance.accessibilityFeatures.invertColors;
   }
 
+  int _autoRetries = 0;
+
+  /// 单张图片失败后自动重试一次：网络抖动或 QUIC 握手失败时，
+  /// 往往立刻再试就能成功，省得用户手动点。
+  void _scheduleAutoRetry() {
+    if (_autoRetries >= 1) return;
+    _autoRetries++;
+    Future.delayed(const Duration(milliseconds: 1500), () async {
+      if (!mounted || _lastException == null) return;
+      await widget.image.evict();
+      if (!mounted) return;
+      setState(() {
+        _lastException = null;
+        _loadingProgress = null;
+      });
+      _resolveImage();
+    });
+  }
+
+  Future<void> _manualRetry() async {
+    ReaderTapScope.maybeOf(context)?.ignoreNextTap();
+    await widget.image.evict();
+    if (!mounted) return;
+    _autoRetries = 0;
+    setState(() {
+      _loadingProgress = null;
+      _lastException = null;
+    });
+    _resolveImage();
+  }
+
   void _resolveImage() {
     final ScrollAwareImageProvider provider = ScrollAwareImageProvider<Object>(
       context: _scrollAwareContext,
@@ -251,6 +282,7 @@ class ComicImageState extends State<ComicImage> with WidgetsBindingObserver {
           setState(() {
             _lastException = error;
           });
+          _scheduleAutoRetry();
         },
       );
     }
@@ -360,8 +392,22 @@ class ComicImageState extends State<ComicImage> with WidgetsBindingObserver {
             child: Column(
               children: [
                 Expanded(
-                  child: Center(
-                    child: Text(_lastException.toString(), maxLines: 3),
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _manualRetry,
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_lastException.toString(), maxLines: 3),
+                          const SizedBox(height: 6),
+                          Text(
+                            "Tap to retry".tl,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -369,12 +415,7 @@ class ComicImageState extends State<ComicImage> with WidgetsBindingObserver {
                   cursor: SystemMouseCursors.click,
                   child: Listener(
                     onPointerDown: (details) {
-                      ReaderTapScope.maybeOf(context)?.ignoreNextTap();
-                      setState(() {
-                        _loadingProgress = null;
-                        _lastException = null;
-                      });
-                      _resolveImage();
+                      _manualRetry();
                     },
                     child: SizedBox(
                       width: 84,
