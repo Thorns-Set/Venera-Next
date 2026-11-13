@@ -156,7 +156,7 @@ class RHttpStreamRequest {
               configured.httpVersionPref == rhttp.HttpVersionPref.all &&
               // reqwest's H3 transport cannot honor HTTP/SOCKS proxies.
               configured.proxySettings is NoProxy &&
-              isImageTlsConnectionInterruption(error);
+              isImageHttp3FallbackEligible(error);
           if (!retry) {
             final reported = _cancelled
                 ? _cancelError()

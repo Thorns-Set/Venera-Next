@@ -24,6 +24,17 @@ bool isImageTlsConnectionInterruption(Object error) {
               message.contains('terminated')));
 }
 
+/// 某些网络能完成 TCP 连接，但会在 ClientHello 之后静默丢弃连接，
+/// 表现为握手超时而不是 RST/EOF。图片请求遇到这种情况同样值得试一次 HTTP/3。
+bool isImageHttp3FallbackEligible(Object error) {
+  if (isImageTlsConnectionInterruption(error)) return true;
+  final text = error.toString().toLowerCase();
+  if (text.contains('dns') || text.contains('certificate')) return false;
+  return text.contains('timed out') ||
+      text.contains('timeout') ||
+      text.contains('handshake');
+}
+
 Duration imageHttp3HeaderTimeout(
   RequestOptions options,
   rhttp.ClientSettings settings,
