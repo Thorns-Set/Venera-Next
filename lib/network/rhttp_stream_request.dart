@@ -560,6 +560,21 @@ rhttp.ClientSettings _withNoSniForEhentai(
   if (!matched) return settings;
   // 图床节点常有不可达的，短超时能更早失败、尽快进入重试，
   // 而不是让页面一直转圈。
+  // 页面/接口请求也给个上限，避免换节点时卡在抓页面上。
+  if (host == 'e-hentai.org' ||
+      host.endsWith('.e-hentai.org') ||
+      host == 'ehgt.org' ||
+      host.endsWith('.ehgt.org')) {
+    final t = settings.timeoutSettings ?? const rhttp.TimeoutSettings();
+    settings = settings.copyWith(
+      timeoutSettings: rhttp.TimeoutSettings(
+        timeout: const Duration(seconds: 15),
+        connectTimeout: const Duration(seconds: 5),
+        keepAliveTimeout: t.keepAliveTimeout,
+        keepAlivePing: t.keepAlivePing,
+      ),
+    );
+  }
   if (host.endsWith('.hath.network') || host == 'hath.network') {
     final t = settings.timeoutSettings ?? const rhttp.TimeoutSettings();
     final seconds = GlobalPreferenceStore(appdata.settings)
@@ -569,7 +584,9 @@ rhttp.ClientSettings _withNoSniForEhentai(
     settings = settings.copyWith(
       timeoutSettings: rhttp.TimeoutSettings(
         timeout: Duration(seconds: seconds),
-        connectTimeout: Duration(seconds: (seconds / 2).ceil()),
+        // 连接阶段单独用短超时：死节点几秒内就能判死，
+        // 而慢节点慢在传输阶段，仍可用满总超时。
+        connectTimeout: const Duration(seconds: 5),
         keepAliveTimeout: t.keepAliveTimeout,
         keepAlivePing: t.keepAlivePing,
       ),
