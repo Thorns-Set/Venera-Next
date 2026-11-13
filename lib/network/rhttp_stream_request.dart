@@ -548,6 +548,19 @@ Future<RHttpStreamCall> _startNativeCall(
   );
 }
 
+/// 同一张图的重试次数。第一次用常规超时快速试，
+/// 重试时给慢节点更长时间，避免把“很慢但能连”的节点直接判死。
+final Map<String, int> _urlAttempts = <String, int>{};
+
+int _bumpAttempt(String key) {
+  final n = _urlAttempts[key] ?? 0;
+  _urlAttempts[key] = n + 1;
+  if (_urlAttempts.length > 1000) {
+    _urlAttempts.clear();
+  }
+  return n;
+}
+
 /// e-hentai 系站点在部分移动网络中只接受“不带 SNI”的 TLS 握手
 /// （带 SNI 会被重置）。这里按域名关闭 SNI，其他站点不受影响。
 rhttp.ClientSettings _withNoSniForEhentai(
@@ -577,16 +590,20 @@ rhttp.ClientSettings _withNoSniForEhentai(
   }
   if (host.endsWith('.hath.network') || host == 'hath.network') {
     final t = settings.timeoutSettings ?? const rhttp.TimeoutSettings();
-    final seconds = GlobalPreferenceStore(appdata.settings)
+    final baseSeconds = GlobalPreferenceStore(appdata.settings)
         .read(DiscoveryPreferences.imageTimeoutSeconds)
         .round()
         .clamp(4, 40);
+    // 首次用用户配置的短超时（快速失败），重试用 60 秒给慢节点机会。
+    final attempt = _bumpAttempt(uri.toString());
+    final seconds = attempt == 0
+        ? baseSeconds
+        : (baseSeconds > 60 ? baseSeconds : 60);
     settings = settings.copyWith(
       timeoutSettings: rhttp.TimeoutSettings(
         timeout: Duration(seconds: seconds),
-        // 连接阶段单独用短超时：死节点几秒内就能判死，
-        // 而慢节点慢在传输阶段，仍可用满总超时。
-        connectTimeout: const Duration(seconds: 5),
+        // 连接阶段：首次快速判死，重试时给慢节点更长握手时间。
+        connectTimeout: Duration(seconds: attempt == 0 ? 5 : 15),
         // 同一节点的多张图复用连接，省掉每张图一次 TLS 握手。
         keepAliveTimeout: t.keepAliveTimeout,
         keepAlivePing: t.keepAlivePing,
