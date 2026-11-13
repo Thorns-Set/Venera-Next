@@ -103,7 +103,7 @@ class RHttpStreamRequest {
     bool allowImageHttp3Fallback,
   ) async {
     try {
-      var configured = await settings;
+      var configured = _withNoSniForEhentai(await settings, options.uri);
       Object? originalError;
       while (true) {
         if (_cancelled) throw _cancelError();
@@ -537,5 +537,30 @@ Future<RHttpStreamCall> _startNativeCall(
     ),
     finished: finished,
     cancel: cancel,
+  );
+}
+
+/// e-hentai 系站点在部分移动网络中只接受“不带 SNI”的 TLS 握手
+/// （带 SNI 会被重置）。这里按域名关闭 SNI，其他站点不受影响。
+rhttp.ClientSettings _withNoSniForEhentai(
+  rhttp.ClientSettings settings,
+  Uri uri,
+) {
+  const suffixes = <String>['e-hentai.org', 'ehgt.org', 'hath.network'];
+  final host = uri.host.toLowerCase();
+  final matched = suffixes.any((s) => host == s || host.endsWith('.$s'));
+  if (!matched) return settings;
+  final tls = settings.tlsSettings ?? const rhttp.TlsSettings();
+  if (!tls.sni) return settings;
+  return settings.copyWith(
+    tlsSettings: rhttp.TlsSettings(
+      trustRootCertificates: tls.trustRootCertificates,
+      trustedRootCertificates: tls.trustedRootCertificates,
+      verifyCertificates: tls.verifyCertificates,
+      clientCertificate: tls.clientCertificate,
+      minTlsVersion: tls.minTlsVersion,
+      maxTlsVersion: tls.maxTlsVersion,
+      sni: false,
+    ),
   );
 }
