@@ -570,7 +570,7 @@ rhttp.ClientSettings _withNoSniForEhentai(
       timeoutSettings: rhttp.TimeoutSettings(
         timeout: const Duration(seconds: 15),
         connectTimeout: const Duration(seconds: 5),
-        keepAliveTimeout: const Duration(seconds: 60),
+        keepAliveTimeout: t.keepAliveTimeout,
         keepAlivePing: t.keepAlivePing,
       ),
     );
@@ -588,7 +588,7 @@ rhttp.ClientSettings _withNoSniForEhentai(
         // 而慢节点慢在传输阶段，仍可用满总超时。
         connectTimeout: const Duration(seconds: 5),
         // 同一节点的多张图复用连接，省掉每张图一次 TLS 握手。
-        keepAliveTimeout: const Duration(seconds: 60),
+        keepAliveTimeout: t.keepAliveTimeout,
         keepAlivePing: t.keepAlivePing,
       ),
     );
