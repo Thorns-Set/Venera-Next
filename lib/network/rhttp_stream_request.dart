@@ -550,6 +550,19 @@ rhttp.ClientSettings _withNoSniForEhentai(
   final host = uri.host.toLowerCase();
   final matched = suffixes.any((s) => host == s || host.endsWith('.$s'));
   if (!matched) return settings;
+  // 图床节点常有不可达的，短超时能更早失败、尽快进入重试，
+  // 而不是让页面一直转圈。
+  if (host.endsWith('.hath.network') || host == 'hath.network') {
+    final t = settings.timeoutSettings ?? const rhttp.TimeoutSettings();
+    settings = settings.copyWith(
+      timeoutSettings: rhttp.TimeoutSettings(
+        timeout: const Duration(seconds: 12),
+        connectTimeout: const Duration(seconds: 6),
+        keepAliveTimeout: t.keepAliveTimeout,
+        keepAlivePing: t.keepAlivePing,
+      ),
+    );
+  }
   final tls = settings.tlsSettings ?? const rhttp.TlsSettings();
   if (!tls.sni) return settings;
   return settings.copyWith(
