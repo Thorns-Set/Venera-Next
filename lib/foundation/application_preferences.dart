@@ -129,6 +129,7 @@ abstract final class DiscoveryPreferences {
     'showUpdateStatusOnTile',
     true,
   );
+  static const hideHistoryCover = BoolPreference('hideHistoryCover', false);
   static const autoAddLanguageFilter = ChoicePreference(
     'autoAddLanguageFilter',
     'none',
@@ -160,6 +161,7 @@ abstract final class DiscoveryPreferences {
     showHistoryStatusOnTile,
     showDetailedReadingProgress,
     showUpdateStatusOnTile,
+    hideHistoryCover,
     autoAddLanguageFilter,
     initialPage,
     comicListDisplayMode,

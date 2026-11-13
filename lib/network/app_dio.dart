@@ -171,6 +171,7 @@ class AppDio with DioMixin {
       interceptors.add(CloudflareInterceptor());
       interceptors.add(MyLogInterceptor());
       interceptors.add(cache);
+      interceptors.add(NetworkRetryInterceptor(this));
     }
   }
 
@@ -356,5 +357,46 @@ class RHttpAdapter implements HttpClientAdapter {
         "Invalid Status Code 429: Too many requests. Please try again later.",
       _ => "Invalid Status Code $statusCode",
     };
+  }
+}
+
+/// 网络层重试：TLS/H3 传输在响应体阶段被中断时，自动重试整个 GET 请求。
+class NetworkRetryInterceptor extends Interceptor {
+  NetworkRetryInterceptor(this._dio);
+
+  final Dio _dio;
+
+  static const int maxRetries = 2;
+
+  bool _retryable(DioException err) {
+    final text = '${err.error ?? ''} ${err.message ?? ''} ${err.toString()}';
+    return text.contains('error decoding response body') ||
+        text.contains('Connection reset by peer') ||
+        text.contains('unexpected eof') ||
+        text.contains('UnexpectedEof') ||
+        text.contains('tls handshake eof') ||
+        text.contains('Connection terminated during handshake') ||
+        text.contains('HTTP/3');
+  }
+
+  @override
+  Future<void> onError(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
+    final options = err.requestOptions;
+    final tried = (options.extra['__networkRetry'] as int?) ?? 0;
+    final isGet = options.method.toUpperCase() == 'GET';
+    if (!isGet || tried >= maxRetries || !_retryable(err)) {
+      handler.next(err);
+      return;
+    }
+    options.extra['__networkRetry'] = tried + 1;
+    try {
+      final response = await _dio.fetch(options);
+      handler.resolve(response);
+    } catch (_) {
+      handler.next(err);
+    }
   }
 }

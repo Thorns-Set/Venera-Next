@@ -4,7 +4,10 @@ import 'package:venera_next/components/gesture.dart';
 import 'package:venera_next/components/summary_header.dart';
 import 'package:venera_next/features/comic_details/comic_details.dart';
 import 'package:venera_next/features/comic_widgets/comic_widgets.dart';
+import 'package:venera_next/foundation/appdata.dart';
+import 'package:venera_next/foundation/application_preferences.dart';
 import 'package:venera_next/foundation/context.dart';
+import 'package:venera_next/foundation/global_preference_store.dart';
 import 'package:venera_next/foundation/translations.dart';
 import 'package:venera_next/foundation/widget_utils.dart';
 
@@ -115,21 +118,42 @@ class _HistorySummaryState extends State<HistorySummary> {
                     itemCount: history.length,
                     itemBuilder: (context, index) {
                       final heroID = history[index].id.hashCode;
+                      final hideCover = GlobalPreferenceStore(
+                        appdata.settings,
+                      ).read(DiscoveryPreferences.hideHistoryCover);
+                      void openComic() {
+                        context.to(
+                          () => ComicPage(
+                            id: history[index].id,
+                            sourceKey: history[index].type.sourceKey,
+                            cover: history[index].cover,
+                            title: history[index].title,
+                            heroID: heroID,
+                          ),
+                        );
+                      }
+
+                      if (hideCover) {
+                        return ClickInkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: openComic,
+                          child: Container(
+                            width: 98,
+                            height: 136,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.secondaryContainer,
+                            ),
+                          ),
+                        ).paddingHorizontal(8).paddingVertical(2);
+                      }
                       return SimpleComicTile(
                         comic: history[index],
                         heroID: heroID,
                         gaplessPlayback: true,
-                        onTap: () {
-                          context.to(
-                            () => ComicPage(
-                              id: history[index].id,
-                              sourceKey: history[index].type.sourceKey,
-                              cover: history[index].cover,
-                              title: history[index].title,
-                              heroID: heroID,
-                            ),
-                          );
-                        },
+                        onTap: openComic,
                       ).paddingHorizontal(8).paddingVertical(2);
                     },
                   ),

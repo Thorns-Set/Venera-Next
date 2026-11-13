@@ -56,6 +56,13 @@ class _ExploreSettingsState extends State<ExploreSettings> {
           preference: DiscoveryPreferences.showHistoryStatusOnTile,
         ).toSliver(),
         SwitchSetting.preference(
+          title: 'Hide cover in home history'.tl,
+          subtitle:
+              'Keep the history entries and their tap actions, only hide the cover images.'
+                  .tl,
+          preference: DiscoveryPreferences.hideHistoryCover,
+        ).toSliver(),
+        SwitchSetting.preference(
           title: 'Show detailed reading progress'.tl,
           subtitle:
               'Show saved chapter totals and pages in the current chapter. No extra network requests.'
