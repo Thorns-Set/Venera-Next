@@ -130,6 +130,13 @@ abstract final class DiscoveryPreferences {
     true,
   );
   static const hideHistoryCover = BoolPreference('hideHistoryCover', false);
+  static const imageTimeoutSeconds = NumericPreference(
+    'imageTimeoutSeconds',
+    8,
+    min: 4,
+    max: 40,
+    step: 1,
+  );
   static const autoAddLanguageFilter = ChoicePreference(
     'autoAddLanguageFilter',
     'none',
@@ -162,6 +169,7 @@ abstract final class DiscoveryPreferences {
     showDetailedReadingProgress,
     showUpdateStatusOnTile,
     hideHistoryCover,
+    imageTimeoutSeconds,
     autoAddLanguageFilter,
     initialPage,
     comicListDisplayMode,

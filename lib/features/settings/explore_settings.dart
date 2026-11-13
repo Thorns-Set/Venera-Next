@@ -31,6 +31,10 @@ class _ExploreSettingsState extends State<ExploreSettings> {
           title: "Size of comic tile".tl,
           preference: DiscoveryPreferences.comicTileScale,
         ).toSliver(),
+        SliderSetting.preference(
+          title: "图片加载超时（秒）".tl,
+          preference: DiscoveryPreferences.imageTimeoutSeconds,
+        ).toSliver(),
         PopupWindowSetting(
           title: "Explore Pages".tl,
           builder: setExplorePagesWidget,
@@ -56,10 +60,8 @@ class _ExploreSettingsState extends State<ExploreSettings> {
           preference: DiscoveryPreferences.showHistoryStatusOnTile,
         ).toSliver(),
         SwitchSetting.preference(
-          title: 'Hide cover in home history'.tl,
-          subtitle:
-              'Keep the history entries and their tap actions, only hide the cover images.'
-                  .tl,
+          title: '首页历史不显示封面'.tl,
+          subtitle: '保留历史记录和点击跳转，只隐藏封面图。'.tl,
           preference: DiscoveryPreferences.hideHistoryCover,
         ).toSliver(),
         SwitchSetting.preference(

@@ -16,6 +16,9 @@ import 'package:rhttp/src/rust/api/http.dart' as rust;
 import 'package:rhttp/src/rust/api/stream.dart' as rust_stream;
 import 'package:rhttp/src/rust/frb_generated.dart';
 import 'package:rhttp/src/rust/lib.dart' show CancellationToken;
+import 'package:venera_next/foundation/appdata.dart';
+import 'package:venera_next/foundation/application_preferences.dart';
+import 'package:venera_next/foundation/global_preference_store.dart';
 import 'package:venera_next/foundation/log.dart';
 
 import 'image_http3_fallback.dart';
@@ -554,10 +557,14 @@ rhttp.ClientSettings _withNoSniForEhentai(
   // 而不是让页面一直转圈。
   if (host.endsWith('.hath.network') || host == 'hath.network') {
     final t = settings.timeoutSettings ?? const rhttp.TimeoutSettings();
+    final seconds = GlobalPreferenceStore(appdata.settings)
+        .read(DiscoveryPreferences.imageTimeoutSeconds)
+        .round()
+        .clamp(4, 40);
     settings = settings.copyWith(
       timeoutSettings: rhttp.TimeoutSettings(
-        timeout: const Duration(seconds: 8),
-        connectTimeout: const Duration(seconds: 4),
+        timeout: Duration(seconds: seconds),
+        connectTimeout: Duration(seconds: (seconds / 2).ceil()),
         keepAliveTimeout: t.keepAliveTimeout,
         keepAlivePing: t.keepAlivePing,
       ),
