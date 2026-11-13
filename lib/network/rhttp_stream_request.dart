@@ -159,6 +159,11 @@ class RHttpStreamRequest {
               configured.httpVersionPref == rhttp.HttpVersionPref.all &&
               // reqwest's H3 transport cannot honor HTTP/SOCKS proxies.
               configured.proxySettings is NoProxy &&
+              // H@H 节点是随机高位端口，只支持 TCP；对这些地址做 QUIC 尝试
+              // 只会拿到空响应，反而把好端端的一张图变成“空数据”。
+              (options.uri.hasPort == false ||
+                  options.uri.port == 443 ||
+                  options.uri.port == 80) &&
               isImageHttp3FallbackEligible(error);
           if (!retry) {
             final reported = _cancelled
