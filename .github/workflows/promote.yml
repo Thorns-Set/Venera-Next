@@ -15,17 +15,27 @@ permissions:
 jobs:
   promote:
     runs-on: ubuntu-22.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
+      - uses: actions/checkout@v7
       - name: 下载产物
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh run download "${{ inputs.run_id }}" -R "$GITHUB_REPOSITORY" -n apk -D dl
           ls -l dl
-      - name: 上传到 Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: 上传到临时网盘
         run: |
-          gh release view patched-v3 >/dev/null 2>&1 || gh release create patched-v3 --title "patched-v3" --notes "VeneraNext arm64 debug 包"
-          gh release upload patched-v3 dl/*arm64*.apk --clobber
+          set -euo pipefail
+          f=$(ls dl/*arm64*.apk | head -1)
+          echo "上传 $f"
+          url=$(curl -sS --max-time 1200 -F "reqtype=fileupload" -F "time=72h" -F "fileToUpload=@$f" https://litterbox.catbox.moe/resources/internals/api.php)
+          echo "URL: $url"
+          echo "$url" > apk_url.txt
+      - name: 记录链接
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add apk_url.txt
+          git commit -m "chore: 记录 APK 临时下载链接" || true
+          git push || true
