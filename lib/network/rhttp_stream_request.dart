@@ -550,6 +550,11 @@ rhttp.ClientSettings _withNoSniForEhentai(
   final host = uri.host.toLowerCase();
   final matched = suffixes.any((s) => host == s || host.endsWith('.$s'));
   if (!matched) return settings;
+  // 图床在部分网络中 TCP 完全不通、只有 QUIC 可达，
+  // 直接走 HTTP/3，省掉每次先试 TCP 再回退的等待。
+  if (host == 'hath.network' || host.endsWith('.hath.network')) {
+    settings = settings.copyWith(httpVersionPref: rhttp.HttpVersionPref.http3);
+  }
   final tls = settings.tlsSettings ?? const rhttp.TlsSettings();
   if (!tls.sni) return settings;
   return settings.copyWith(
